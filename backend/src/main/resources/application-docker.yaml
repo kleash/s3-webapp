@@ -1,0 +1,27 @@
+server:
+  port: 9080
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:9071
+      - http://localhost:9080
+
+s3:
+  buckets:
+    - id: logs
+      name: "Local Minio - Logs"
+      bucketName: "logs"
+      endpointUrl: "http://minio:9000"
+      accessKey: "minioadmin"
+      secretKey: "minioadmin"
+      region: "us-east-1"
+      pathStyleAccess: true
+    - id: backups
+      name: "Local Minio - Backups"
+      bucketName: "backups"
+      endpointUrl: "http://minio:9000"
+      accessKey: "minioadmin"
+      secretKey: "minioadmin"
+      region: "us-east-1"
+      pathStyleAccess: true

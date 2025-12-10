@@ -1,0 +1,23 @@
+:host { display: block; font-family: 'Inter', system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #0b1c2c 0%, #0b5678 100%); min-height: 100vh; color: #0b1c2c; }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+header { display: flex; justify-content: space-between; align-items: center; color: #f7faff; }
+header h1 { margin: 0; font-size: 1.8rem; }
+.subtitle { margin: 0.2rem 0 0; color: #c8d8e8; }
+.status { padding: 0.5rem 0.75rem; border-radius: 10px; background: rgba(255,255,255,0.1); color: #fff; }
+
+.controls { display: flex; gap: 1rem; margin-top: 1rem; background: #fff; padding: 1rem; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.08); align-items: center; flex-wrap: wrap; }
+
+.content { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-top: 1rem; }
+.main { background: #fff; padding: 1rem; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.08); }
+.side { display: flex; flex-direction: column; gap: 0.8rem; }
+.size-card { background: #fff; padding: 0.9rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+.bulk-bar { margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: center; background: #f5f7fb; padding: 0.75rem; border-radius: 10px; }
+.bulk-bar input { padding: 0.4rem 0.6rem; border: 1px solid #d0d6dd; border-radius: 8px; }
+.bulk-bar button { padding: 0.45rem 0.8rem; border-radius: 8px; border: none; background: #0b84ff; color: #fff; cursor: pointer; }
+.bulk-bar button.danger { background: #ff6b6b; }
+
+@media (max-width: 900px) {
+  .content { grid-template-columns: 1fr; }
+}

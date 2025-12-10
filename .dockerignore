@@ -1,0 +1,10 @@
+node_modules
+frontend/node_modules
+e2e/node_modules
+backend/target
+backend/src/main/resources/static
+frontend/dist
+data
+.idea
+.vscode
+.DS_Store

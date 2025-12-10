@@ -1,0 +1,30 @@
+.DS_Store
+*.log
+*.iml
+.idea/
+.vscode/
+
+# Maven / Java
+backend/target/
+*.class
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/cache/
+frontend/.npm/
+
+# Playwright / e2e
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+
+# Docker / local data
+data/
+
+# General
+tmp/
+*.tmp
+*.swp
+*.swo
