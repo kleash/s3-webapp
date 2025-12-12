@@ -53,7 +53,7 @@ flowchart LR
   - **Delete**: Accepts direct keys and/or prefixes; prefixes are expanded to all matching keys before issuing batched S3 delete (900 keys per chunk).
   - **Folder delete**: Lists all keys under prefix then reuses delete logic.
   - **Folder copy/move**: Lists all objects under `sourcePrefix`, builds relative path, writes to `targetPrefix`, respects overwrite=false by skipping conflicts and recording an error per object, optionally deletes source per object when `deleteSource=true`. Returns `FolderOperationResult` with copied/skipped/error counts (partial success tolerated).
-  - **Folder size**: Iterates all objects under prefix, summing sizes and counts.
+  - **Folder size**: Async job per prefix, streamed via WebSocket with progress/cancel; sums sizes and counts (optional caps).
   - **Search**: Client-side wildcard match (case-insensitive) against keys and names within a prefix; paginates through listings.
 - **Controllers**
   - Map REST routes to `StorageService`, validate payloads, and wrap responses (including bulk/folder operations).
@@ -109,11 +109,21 @@ ObjectController -> StorageService.handleFolderOperation(deleteSource=true)
 
 ### Folder size
 ```
-Frontend -> GET /api/buckets/{id}/folders/size?prefix=foo/bar/
-ObjectController -> StorageService.folderSize
-  - list all objects under prefix (paged)
-  - sum sizes and count objects
-<- {prefix,totalSizeBytes,objectCount}
+Frontend:
+  POST /api/buckets/{id}/folders/size {prefix}
+  <- {job:{id,status,...}, websocketPath:"/api/ws/folder-size/{id}"}
+  open WebSocket to websocketPath for streaming events
+
+FolderSizeController -> FolderSizeJobService.start
+  - creates in-memory job (per instance) and submits to executor
+  - FolderSizeCalculator iterates paged listings, sums size/count, emits progress each page
+  - Optional caps from app.folder-size.* (max-objects, max-runtime, progress-page-interval, retention, cancel-on-disconnect)
+  - Cancellation via DELETE /api/buckets/{id}/folders/size/{jobId} or WS message "cancel"
+
+WebSocket stream (FolderSizeEvent):
+  STARTED/PROGRESS/PARTIAL/COMPLETED/FAILED/CANCELED with payload
+  {job:{prefix,objectsScanned,totalSizeBytes,partial,partialReason,message,status}}
+  Server closes socket on terminal events; jobs pruned after retention window
 ```
 
 ## Error handling & logging

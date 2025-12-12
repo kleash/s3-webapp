@@ -6,6 +6,15 @@ app:
     allowed-origins:
       - http://localhost:9071
       - http://localhost:9080
+  folder-size:
+    max-parallel-jobs: 2
+    progress-page-interval: 1
+    # Set max-objects to 0 to disable capping. Use a positive number to stop after that many objects.
+    max-objects: 0
+    # Set to 0s to disable runtime limit. Example: 5m
+    max-runtime: 0s
+    retention: 10m
+    cancel-on-disconnect: false
 
 s3:
   buckets:

@@ -6,6 +6,13 @@ app:
     allowed-origins:
       - http://localhost:9071
       - http://localhost:9080
+  folder-size:
+    max-parallel-jobs: 2
+    progress-page-interval: 1
+    max-objects: 0
+    max-runtime: 0s
+    retention: 10m
+    cancel-on-disconnect: false
 
 s3:
   buckets:

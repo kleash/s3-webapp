@@ -118,7 +118,9 @@ test.describe('LDAP access control', () => {
     // Folder size and move
     await page.fill('input[name="folderPrefix"]', 'app/2025/01/01/');
     await page.getByRole('button', { name: 'Folder size' }).click();
-    await expect(page.locator('.size-card')).toBeVisible({ timeout: 5000 });
+    const sizeCard = page.locator('.size-card');
+    await expect(sizeCard).toBeVisible({ timeout: 5000 });
+    await expect(sizeCard.getByText('objects ·', { exact: false })).toBeVisible({ timeout: 10000 });
 
     const crumbToMonth = page.locator('.breadcrumb .crumb', { hasText: /^01$/ }).first();
     await crumbToMonth.click();

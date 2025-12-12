@@ -53,16 +53,33 @@
         [selectedKey]="selectedKey"
         [currentPrefix]="currentPrefix"
         [canWrite]="canWrite"
+        [folderSizeLoading]="folderSizeLoading"
         (copy)="copy($event)"
         (move)="move($event)"
         (deleteObject)="deleteObject($event)"
         (deleteFolder)="deleteFolder($event)"
         (folderSize)="requestFolderSize($event)"
       ></app-operations-panel>
-      <div class="size-card" *ngIf="folderSizeInfo">
+      <div class="size-card" *ngIf="folderSizeJob || folderSizeInfo">
         <p class="label">Folder size</p>
-        <h4>{{ folderSizeInfo.prefix }}</h4>
-        <p>{{ folderSizeInfo.objectCount }} objects · {{ folderSizeInfo.totalSizeBytes | number }} bytes</p>
+        <h4>{{ (folderSizeJob || folderSizeInfo)?.prefix || '/' }}</h4>
+        <ng-container *ngIf="isFolderSizeRunning(); else sizeResult">
+          <p>{{ folderSizeJob?.objectsScanned || 0 }} objects scanned · {{ folderSizeJob?.totalSizeBytes || 0 | number }} bytes</p>
+          <div class="progress-row">
+            <span class="spinner"></span>
+            <span>{{ folderSizeJob?.status === 'QUEUED' ? 'Queued...' : 'Scanning objects...' }}</span>
+            <button type="button" class="link" (click)="cancelFolderSize()">Cancel</button>
+          </div>
+        </ng-container>
+        <ng-template #sizeResult>
+          <p *ngIf="folderSizeInfo">
+            {{ folderSizeInfo.objectCount }} objects · {{ folderSizeInfo.totalSizeBytes | number }} bytes
+            <span class="chip warn" *ngIf="folderSizeInfo.partial">partial</span>
+          </p>
+          <p class="warn" *ngIf="folderSizeInfo?.partial">{{ folderSizeInfo?.message || 'Stopped early by limits' }}</p>
+          <p class="warn" *ngIf="folderSizeJob?.status === 'FAILED' && folderSizeJob?.message">{{ folderSizeJob?.message }}</p>
+          <p class="warn" *ngIf="folderSizeJob?.status === 'CANCELED'">Canceled</p>
+        </ng-template>
       </div>
     </div>
   </section>

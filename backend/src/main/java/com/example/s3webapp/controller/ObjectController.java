@@ -4,7 +4,6 @@ import com.example.s3webapp.model.BulkCopyMoveRequest;
 import com.example.s3webapp.model.CopyMoveRequest;
 import com.example.s3webapp.model.DeleteFolderRequest;
 import com.example.s3webapp.model.DeleteObjectsRequest;
-import com.example.s3webapp.model.FolderSizeResponse;
 import com.example.s3webapp.model.FolderCopyRequest;
 import com.example.s3webapp.model.FolderOperationResult;
 import com.example.s3webapp.model.ObjectItem;
@@ -94,12 +93,6 @@ public class ObjectController {
             @PathVariable("bucketId") String bucketId, @Valid @RequestBody DeleteFolderRequest request) {
         long count = storageService.deleteFolder(bucketId, request);
         return ResponseEntity.ok(java.util.Map.of("deletedCount", count));
-    }
-
-    @GetMapping("/folders/size")
-    public FolderSizeResponse folderSize(
-            @PathVariable("bucketId") String bucketId, @RequestParam("prefix") String prefix) {
-        return storageService.folderSize(bucketId, prefix);
     }
 
     @PostMapping("/objects/bulk-copy")

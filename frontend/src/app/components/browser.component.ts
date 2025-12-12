@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BucketSelectorComponent } from './bucket-selector.component';
@@ -13,7 +13,9 @@ import { FolderSizeResponse } from '../models/folder-size-response';
 import { BulkCopyMoveRequest } from '../models/bulk-copy-move-request';
 import { BulkOperationResult } from '../models/bulk-operation-result';
 import { FolderCopyRequest } from '../models/folder-copy-request';
-import { forkJoin } from 'rxjs';
+import { FolderSizeEvent } from '../models/folder-size-event';
+import { FolderSizeJob } from '../models/folder-size-job';
+import { forkJoin, Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { AccessLevel } from '../models/user-session';
 
@@ -24,7 +26,7 @@ import { AccessLevel } from '../models/user-session';
   templateUrl: './browser.component.html',
   styleUrls: ['./browser.component.scss']
 })
-export class BrowserComponent implements OnInit {
+export class BrowserComponent implements OnInit, OnDestroy {
   title = 'S3 Browser';
   buckets: Bucket[] = [];
   selectedBucketId = '';
@@ -39,12 +41,19 @@ export class BrowserComponent implements OnInit {
   bulkOverwrite = false;
   statusMessage = '';
   folderSizeInfo?: FolderSizeResponse;
+  folderSizeJob?: FolderSizeJob;
+  folderSizeStream?: Subscription;
+  folderSizeLoading = false;
   isSearchMode = false;
 
   constructor(private api: ApiService, private auth: AuthService) {}
 
   ngOnInit() {
     this.loadBuckets();
+  }
+
+  ngOnDestroy() {
+    this.clearFolderSizeState();
   }
 
   get accessLevel(): AccessLevel | null {
@@ -78,6 +87,7 @@ export class BrowserComponent implements OnInit {
     this.currentPrefix = '';
     this.selectedKey = '';
     this.isSearchMode = false;
+    this.clearFolderSizeState();
     this.loadObjects('');
   }
 
@@ -87,6 +97,7 @@ export class BrowserComponent implements OnInit {
     }
     this.loading = true;
     this.isSearchMode = true;
+    this.clearFolderSizeState();
     const prefix = event.withinPrefix ? this.currentPrefix : '';
     this.api.search(this.selectedBucketId, event.query, prefix).subscribe({
       next: res => {
@@ -110,13 +121,17 @@ export class BrowserComponent implements OnInit {
 
   loadObjects(prefix: string, pageToken?: string, append = false) {
     this.loading = true;
+    if (!append) {
+      this.clearFolderSizeState();
+    } else {
+      this.folderSizeInfo = undefined;
+    }
     this.api.listObjects(this.selectedBucketId, prefix, pageToken).subscribe({
       next: res => {
         this.currentPrefix = res.currentPrefix || '';
         this.folders = append ? [...this.folders, ...res.folders] : res.folders || [];
         this.objects = append ? [...this.objects, ...res.objects] : res.objects || [];
         this.nextPageToken = res.nextPageToken || null;
-        this.folderSizeInfo = undefined;
         if (!append) {
           this.selectedKey = '';
           this.selectedKeys = [];
@@ -217,11 +232,28 @@ export class BrowserComponent implements OnInit {
   }
 
   requestFolderSize(prefix: string) {
-    this.api.folderSize(this.selectedBucketId, prefix).subscribe({
+    if (!prefix) return;
+    this.clearFolderSizeState();
+    this.folderSizeLoading = true;
+    this.api.startFolderSize(this.selectedBucketId, prefix).subscribe({
       next: res => {
-        this.folderSizeInfo = res;
+        this.folderSizeJob = res.job;
+        this.folderSizeStream = this.api.streamFolderSize(res.websocketPath).subscribe({
+          next: event => this.handleFolderSizeEvent(event),
+          error: () => {
+            this.statusMessage = 'Size stream failed';
+            this.folderSizeLoading = false;
+          },
+          complete: () => {
+            this.folderSizeLoading = false;
+            this.folderSizeStream = undefined;
+          }
+        });
       },
-      error: () => this.statusMessage = 'Size lookup failed'
+      error: () => {
+        this.statusMessage = 'Size lookup failed';
+        this.folderSizeLoading = false;
+      }
     });
   }
 
@@ -255,6 +287,55 @@ export class BrowserComponent implements OnInit {
 
   bulkMove() {
     this.runBulkCopyMove(true);
+  }
+
+  cancelFolderSize() {
+    if (!this.folderSizeJob) return;
+    this.api.cancelFolderSize(this.selectedBucketId, this.folderSizeJob.id).subscribe({
+      next: job => {
+        this.folderSizeJob = job;
+        this.folderSizeLoading = false;
+        this.folderSizeStream?.unsubscribe();
+        this.folderSizeStream = undefined;
+      },
+      error: () => this.statusMessage = 'Cancel failed'
+    });
+  }
+
+  isFolderSizeRunning(): boolean {
+    return !!this.folderSizeJob && (this.folderSizeJob.status === 'QUEUED' || this.folderSizeJob.status === 'RUNNING');
+  }
+
+  private handleFolderSizeEvent(event: FolderSizeEvent) {
+    this.folderSizeJob = event.job;
+    if (event.job.status === 'COMPLETED') {
+      this.folderSizeInfo = {
+        prefix: event.job.prefix,
+        objectCount: event.job.objectsScanned,
+        totalSizeBytes: event.job.totalSizeBytes,
+        partial: event.job.partial,
+        message: event.job.message
+      };
+      this.folderSizeLoading = false;
+    } else if (event.job.status === 'FAILED') {
+      this.folderSizeInfo = undefined;
+      this.statusMessage = event.job.message || 'Folder size failed';
+      this.folderSizeLoading = false;
+    } else if (event.job.status === 'CANCELED') {
+      this.folderSizeInfo = undefined;
+      this.statusMessage = 'Folder size canceled';
+      this.folderSizeLoading = false;
+    }
+  }
+
+  private clearFolderSizeState() {
+    if (this.folderSizeStream) {
+      this.folderSizeStream.unsubscribe();
+      this.folderSizeStream = undefined;
+    }
+    this.folderSizeJob = undefined;
+    this.folderSizeInfo = undefined;
+    this.folderSizeLoading = false;
   }
 
   private runBulkCopyMove(isMove: boolean) {

@@ -61,6 +61,14 @@ security:
 - Default behavior if nothing matches is to deny access.
 - `ignore-ssl-validation` exists for convenience; production deployments should use proper TLS trust.
 
+### Folder size configuration
+`app.folder-size` controls the async size worker; defaults keep caps disabled:
+- `max-parallel-jobs` (executor pool size per instance)
+- `progress-page-interval` (pages listed between progress events)
+- `max-objects` and `max-runtime` (set to `0`/`0s` to disable caps)
+- `retention` (how long completed jobs stay in memory)
+- `cancel-on-disconnect` (cancel a job when the last WebSocket subscriber drops)
+
 ## Prerequisites
 - Java 17+
 - Maven 3.9+
@@ -151,7 +159,10 @@ These cover deep folders, mixed file types, wildcard search (`trade_2025_*.csv`)
 - `POST /api/buckets/{id}/objects/copy|move` – body `{sourceKey,targetKey,overwrite}`
 - `DELETE /api/buckets/{id}/objects` – body `{keys:[...]}`
 - `DELETE /api/buckets/{id}/folders` – body `{prefix:".../"}` (recursive delete)
-- `GET /api/buckets/{id}/folders/size?prefix=.../` – aggregate size + object count
+- `POST /api/buckets/{id}/folders/size` – start async folder-size job `{prefix}`; returns job + `websocketPath`
+- `GET /api/buckets/{id}/folders/size/{jobId}` – job status snapshot
+- `DELETE /api/buckets/{id}/folders/size/{jobId}` – cancel a running size job
+- `WS /api/ws/folder-size/{jobId}` – live progress events (STARTED/PROGRESS/PARTIAL/COMPLETED/FAILED/CANCELED)
 
 ## Testing
 - Backend unit/integration: `mvn -f backend/pom.xml test`
@@ -160,7 +171,7 @@ These cover deep folders, mixed file types, wildcard search (`trade_2025_*.csv`)
 
 ## Search & size notes
 - Search is a simple wildcard match over listed keys (case-insensitive). For large buckets it performs paged listings client-side; consider tightening prefixes for performance.
-- Folder size iterates all objects under the prefix; for very large trees this can take time.
+- Folder size runs as an async job per prefix, streaming progress over WebSocket so the UI stays responsive. Optional caps (`app.folder-size.max-objects`, `app.folder-size.max-runtime`) can be left at `0`/`0s` to disable limits or set to constrain worst-case scans. Jobs are per-instance and retained in-memory for a short TTL.
 
 ## Ports reminder
 All services are bound to the 9070–9080 range per requirements: MinIO 9070/9072, frontend dev 9071, backend 9080.

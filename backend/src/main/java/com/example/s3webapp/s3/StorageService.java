@@ -1,15 +1,15 @@
 package com.example.s3webapp.s3;
 
 import com.example.s3webapp.config.S3Properties.BucketConfig;
+import com.example.s3webapp.model.BulkCopyMoveRequest;
+import com.example.s3webapp.model.BulkOperationResult;
 import com.example.s3webapp.model.CopyMoveRequest;
 import com.example.s3webapp.model.DeleteFolderRequest;
 import com.example.s3webapp.model.DeleteObjectsRequest;
-import com.example.s3webapp.model.FolderItem;
-import com.example.s3webapp.model.FolderSizeResponse;
-import com.example.s3webapp.model.BulkCopyMoveRequest;
-import com.example.s3webapp.model.BulkOperationResult;
 import com.example.s3webapp.model.FolderCopyRequest;
+import com.example.s3webapp.model.FolderItem;
 import com.example.s3webapp.model.FolderOperationResult;
+import com.example.s3webapp.model.FolderSizeResponse;
 import com.example.s3webapp.model.ObjectItem;
 import com.example.s3webapp.model.ObjectListResponse;
 import com.example.s3webapp.util.KeyUtils;
@@ -43,10 +43,13 @@ public class StorageService {
 
     private final BucketRegistry bucketRegistry;
     private final S3ClientFactory s3ClientFactory;
+    private final FolderSizeCalculator folderSizeCalculator;
 
-    public StorageService(BucketRegistry bucketRegistry, S3ClientFactory s3ClientFactory) {
+    public StorageService(
+            BucketRegistry bucketRegistry, S3ClientFactory s3ClientFactory, FolderSizeCalculator folderSizeCalculator) {
         this.bucketRegistry = bucketRegistry;
         this.s3ClientFactory = s3ClientFactory;
+        this.folderSizeCalculator = folderSizeCalculator;
     }
 
     public List<BucketConfig> listBuckets() {
@@ -267,28 +270,10 @@ public class StorageService {
     }
 
     public FolderSizeResponse folderSize(String bucketId, String prefix) {
-        BucketConfig config = bucketRegistry.require(bucketId);
-        S3Client client = s3ClientFactory.clientFor(config);
-        String normalizedPrefix = KeyUtils.normalizePrefix(prefix);
-        long total = 0;
-        long count = 0;
-        String token = null;
-        do {
-            ListObjectsV2Request.Builder builder = ListObjectsV2Request.builder()
-                    .bucket(config.bucketName())
-                    .prefix(normalizedPrefix)
-                    .maxKeys(500);
-            if (token != null) builder.continuationToken(token);
-            ListObjectsV2Response response = client.listObjectsV2(builder.build());
-            for (S3Object obj : response.contents()) {
-                if (!obj.key().endsWith("/")) {
-                    total += obj.size();
-                    count++;
-                }
-            }
-            token = response.nextContinuationToken();
-        } while (token != null);
-        return new FolderSizeResponse(normalizedPrefix, total, count);
+        FolderSizeComputation computation = folderSizeCalculator.compute(
+                bucketId, prefix, FolderSizeLimits.unbounded(), () -> false, null, 1);
+        return new FolderSizeResponse(
+                computation.prefix(), computation.totalSizeBytes(), computation.objectsScanned());
     }
 
     private ObjectItem toObjectItem(S3Client client, String bucketName, S3Object object) {

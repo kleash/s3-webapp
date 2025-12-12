@@ -34,7 +34,9 @@ import { CopyMoveRequest } from '../models/copy-move-request';
         <input type="text" [(ngModel)]="folderPrefix" name="folderPrefix" />
         <div class="actions">
           <button (click)="deleteFolder.emit(folderPrefix)" [disabled]="!canWrite || !folderPrefix">Delete folder</button>
-          <button (click)="folderSize.emit(folderPrefix)" [disabled]="!folderPrefix" class="alt">Folder size</button>
+          <button (click)="folderSize.emit(folderPrefix)" [disabled]="!folderPrefix || folderSizeLoading" class="alt">
+            {{ folderSizeLoading ? 'Working...' : 'Folder size' }}
+          </button>
         </div>
       </div>
     </div>
@@ -60,6 +62,7 @@ export class OperationsPanelComponent implements OnChanges {
   @Input() selectedKey = '';
   @Input() currentPrefix = '';
   @Input() canWrite = true;
+  @Input() folderSizeLoading = false;
   @Output() copy = new EventEmitter<CopyMoveRequest>();
   @Output() move = new EventEmitter<CopyMoveRequest>();
   @Output() deleteObject = new EventEmitter<string>();

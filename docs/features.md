@@ -38,7 +38,7 @@ The S3 Browser platform lets ops/support engineers and developers browse, search
 - [x] Single object copy/move with overwrite toggle
 - [x] Single object delete
 - [x] Folder delete (recursive by prefix)
-- [x] Folder size aggregation (total bytes + object count)
+- [x] Folder size aggregation (async job + WebSocket progress; total bytes + object count)
 - [x] Folder copy/move by prefix (deep structures preserved, overwrite-aware, per-object error reporting)
 
 ### Bulk operations (multi-select)
@@ -49,7 +49,9 @@ The S3 Browser platform lets ops/support engineers and developers browse, search
 - [x] Success/failure summaries surfaced in UI status bar
 
 ### Folder size & statistics
-- [x] Per-prefix total size and object count
+- [x] Per-prefix total size and object count streamed over WebSocket (UI stays responsive)
+- [x] Live progress (objects scanned, bytes) and cancel
+- [x] Optional caps (max objects/runtime) are configurable and can be disabled; partial results flagged in UI
 - [x] Human-readable display in UI
 
 ### Download & inspection
@@ -83,7 +85,7 @@ The S3 Browser platform lets ops/support engineers and developers browse, search
 - **Navigate folders:** Click “Open” on a folder row or breadcrumb segments to move up/down.
 - **Perform a bulk delete:** Check multiple rows (files and/or folders), click “Bulk delete”. The view refreshes with a summary.
 - **Move a folder:** Select a folder row (checkbox), enter a target prefix in the bulk bar (e.g., `app/2025/05/`), click “Bulk move”. Contents are moved preserving substructure; conflicts are skipped when overwrite is off.
-- **Check folder size:** Enter prefix in the side panel “Folder prefix” box and click “Folder size” to show bytes and object count.
+- **Check folder size:** Enter prefix in the side panel “Folder prefix” box and click “Folder size” to see live progress; cancel if needed. Final card shows bytes and object count (partial results flagged).
 - **Run demo:** `./scripts/demo.sh` builds, starts MinIO + backend, seeds data, and serves the UI at `http://localhost:9080`.
 - **Run e2e tests:** `./scripts/e2e.sh` brings up the stack, seeds, runs Playwright, and stops containers.
 
