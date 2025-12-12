@@ -1,50 +1,24 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
-import { environment } from '../environments/environment';
+import { AuthService } from './services/auth.service';
+import { of } from 'rxjs';
 
-describe('AppComponent', () => {
-  let httpMock: HttpTestingController;
+describe('AppComponent shell', () => {
+  let authService: jasmine.SpyObj<AuthService>;
 
   beforeEach(async () => {
+    authService = jasmine.createSpyObj('AuthService', ['loadSession', 'logout'], { currentUser$: of(null) });
+    authService.loadSession.and.returnValue(of(null));
+    authService.logout.and.returnValue(of(void 0));
     await TestBed.configureTestingModule({
-      imports: [AppComponent, HttpClientTestingModule]
-    }).compileComponents();
-    httpMock = TestBed.inject(HttpTestingController);
+      imports: [AppComponent, RouterTestingModule]
+    }).overrideProvider(AuthService, { useValue: authService }).compileComponents();
   });
 
-  afterEach(() => {
-    httpMock.verify();
-  });
-
-  it('loads buckets and selects first', () => {
+  it('initializes session on start', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
-
-    const bucketsReq = httpMock.expectOne(`${environment.apiBaseUrl}/buckets`);
-    bucketsReq.flush([{ id: 'a', name: 'A', bucketName: 'bucket-a' }]);
-
-    const listReq = httpMock.expectOne(`${environment.apiBaseUrl}/buckets/a/objects`);
-    listReq.flush({ currentPrefix: '', folders: [], objects: [] });
-
-    expect(fixture.componentInstance.buckets.length).toBe(1);
-    expect(fixture.componentInstance.selectedBucketId).toBe('a');
-  });
-
-  it('sends bulk delete with keys and prefixes', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const comp = fixture.componentInstance;
-    comp.selectedBucketId = 'demo';
-    comp.selectedKeys = ['file.txt', 'folder/'];
-    comp.bulkDelete();
-
-    const req = httpMock.expectOne(`${environment.apiBaseUrl}/buckets/demo/objects`);
-    expect(req.request.method).toBe('DELETE');
-    expect(req.request.body.keys).toContain('file.txt');
-    expect(req.request.body.prefixes).toContain('folder/');
-    req.flush([]);
-
-    const reloadReq = httpMock.expectOne(`${environment.apiBaseUrl}/buckets/demo/objects`);
-    reloadReq.flush({ currentPrefix: '', folders: [], objects: [] });
+    expect(authService.loadSession).toHaveBeenCalled();
   });
 });

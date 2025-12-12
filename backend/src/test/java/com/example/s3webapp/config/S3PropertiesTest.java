@@ -2,7 +2,6 @@ package com.example.s3webapp.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,7 +16,12 @@ import org.springframework.test.context.TestPropertySource;
         "s3.buckets[0].accessKey=test",
         "s3.buckets[0].secretKey=secret",
         "s3.buckets[0].region=us-east-1",
-        "s3.buckets[0].pathStyleAccess=true"
+        "s3.buckets[0].pathStyleAccess=true",
+        "security.ldap.embedded.enabled=false",
+        "security.ldap.url=ldap://localhost:0",
+        "security.ldap.bindDn=cn=placeholder",
+        "security.ldap.bindPassword=placeholder",
+        "security.ldap.userSearchBase=dc=example,dc=com"
 })
 class S3PropertiesTest {
 

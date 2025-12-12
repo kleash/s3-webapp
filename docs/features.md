@@ -12,6 +12,7 @@ The S3 Browser platform lets ops/support engineers and developers browse, search
 - Folder size & statistics
 - Download & inspection
 - Configuration and environment
+- Security & access control
 - Seed data & demo mode
 - End-to-end regression tests
 
@@ -60,6 +61,14 @@ The S3 Browser platform lets ops/support engineers and developers browse, search
 - [x] CORS enabled for dev hosts (9071/9080 by default)
 - [x] Docker profile wired for docker-compose deployments
 
+### Security & access control
+- [x] LDAP-backed login with username/password
+- [x] Role mapping from LDAP groups (`memberOf`) and optional per-username lists
+- [x] Roles: read-only (list/search/download/size) and read-write (full CRUD); read-write wins if both match
+- [x] Access level shown in the header; logout provided
+- [x] UI hides/disables write controls for read-only users; backend enforces authorization on all APIs
+- [x] “No role match” defaults to deny (configurable)
+
 ### Seed data & demo mode
 - [x] `scripts/seed-data.sh` creates buckets `logs`, `backups` with nested folders, mixed file types/sizes, root-level files
 - [x] `scripts/demo.sh` builds frontend+backend, starts MinIO + backend, seeds data, and prints access URL
@@ -73,7 +82,7 @@ The S3 Browser platform lets ops/support engineers and developers browse, search
 - **Select a bucket:** Choose from the dropdown at top; the root listing loads automatically.
 - **Navigate folders:** Click “Open” on a folder row or breadcrumb segments to move up/down.
 - **Perform a bulk delete:** Check multiple rows (files and/or folders), click “Bulk delete”. The view refreshes with a summary.
-- **Move a folder:** Select a folder row (checkbox), enter a target prefix in the bulk bar (e.g., `root/app/2025/05/`), click “Bulk move”. Contents are moved preserving substructure; conflicts are skipped when overwrite is off.
+- **Move a folder:** Select a folder row (checkbox), enter a target prefix in the bulk bar (e.g., `app/2025/05/`), click “Bulk move”. Contents are moved preserving substructure; conflicts are skipped when overwrite is off.
 - **Check folder size:** Enter prefix in the side panel “Folder prefix” box and click “Folder size” to show bytes and object count.
 - **Run demo:** `./scripts/demo.sh` builds, starts MinIO + backend, seeds data, and serves the UI at `http://localhost:9080`.
 - **Run e2e tests:** `./scripts/e2e.sh` brings up the stack, seeds, runs Playwright, and stops containers.

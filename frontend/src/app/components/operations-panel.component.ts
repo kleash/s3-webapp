@@ -11,6 +11,7 @@ import { CopyMoveRequest } from '../models/copy-move-request';
     <div class="panel">
       <h3>Operations</h3>
       <p class="hint">Selected: <strong>{{ selectedKey || 'None' }}</strong></p>
+      <p class="hint warn" *ngIf="!canWrite">Read-only access</p>
 
       <div class="block">
         <label>Target key</label>
@@ -19,20 +20,20 @@ import { CopyMoveRequest } from '../models/copy-move-request';
           <input type="checkbox" [(ngModel)]="overwrite" name="overwrite" /> Allow overwrite
         </label>
         <div class="actions">
-          <button [disabled]="!selectedKey || !targetKey" (click)="emitCopy(false)">Copy</button>
-          <button [disabled]="!selectedKey || !targetKey" (click)="emitCopy(true)" class="alt">Move</button>
+          <button [disabled]="!canWrite || !selectedKey || !targetKey" (click)="emitCopy(false)">Copy</button>
+          <button [disabled]="!canWrite || !selectedKey || !targetKey" (click)="emitCopy(true)" class="alt">Move</button>
         </div>
       </div>
 
       <div class="block">
-        <button [disabled]="!selectedKey" (click)="deleteObject.emit(selectedKey)">Delete object</button>
+        <button [disabled]="!canWrite || !selectedKey" (click)="deleteObject.emit(selectedKey)">Delete object</button>
       </div>
 
       <div class="block">
         <label>Folder prefix</label>
         <input type="text" [(ngModel)]="folderPrefix" name="folderPrefix" />
         <div class="actions">
-          <button (click)="deleteFolder.emit(folderPrefix)" [disabled]="!folderPrefix">Delete folder</button>
+          <button (click)="deleteFolder.emit(folderPrefix)" [disabled]="!canWrite || !folderPrefix">Delete folder</button>
           <button (click)="folderSize.emit(folderPrefix)" [disabled]="!folderPrefix" class="alt">Folder size</button>
         </div>
       </div>
@@ -51,12 +52,14 @@ import { CopyMoveRequest } from '../models/copy-move-request';
       button:disabled { opacity: 0.5; cursor: not-allowed; }
       .checkbox { display: flex; align-items: center; gap: 0.35rem; margin-top: 0.35rem; }
       .hint strong { color: #fff; }
+      .hint.warn { color: #fbbf24; }
     `
   ]
 })
 export class OperationsPanelComponent implements OnChanges {
   @Input() selectedKey = '';
   @Input() currentPrefix = '';
+  @Input() canWrite = true;
   @Output() copy = new EventEmitter<CopyMoveRequest>();
   @Output() move = new EventEmitter<CopyMoveRequest>();
   @Output() deleteObject = new EventEmitter<string>();
@@ -76,6 +79,7 @@ export class OperationsPanelComponent implements OnChanges {
   }
 
   emitCopy(isMove: boolean) {
+    if (!this.canWrite) return;
     const payload: CopyMoveRequest = {
       sourceKey: this.selectedKey,
       targetKey: this.targetKey,

@@ -1,0 +1,69 @@
+<div class="page">
+  <header>
+    <div>
+      <h1>{{ title }}</h1>
+      <p class="subtitle">Browse any S3-compatible storage and manage objects.</p>
+    </div>
+    <div class="meta">
+      <div class="chip" [class.readonly]="!canWrite" *ngIf="accessLabel">Access: {{ accessLabel }}</div>
+      <div class="status" *ngIf="statusMessage">{{ statusMessage }}</div>
+    </div>
+  </header>
+
+  <section class="controls">
+    <app-bucket-selector
+      [buckets]="buckets"
+      [selectedId]="selectedBucketId"
+      (bucketChange)="onBucketChange($event)"
+    ></app-bucket-selector>
+    <app-search-bar (search)="onSearch($event)" (reset)="resetSearch()"></app-search-bar>
+  </section>
+
+  <div class="readonly-banner" *ngIf="!canWrite">
+    You are in read-only mode. Write operations (copy/move/delete) are hidden.
+  </div>
+
+  <section class="content">
+    <div class="main">
+      <app-object-browser
+        [folders]="folders"
+        [objects]="objects"
+        [currentPrefix]="currentPrefix"
+        [loading]="loading"
+        [nextPageToken]="nextPageToken"
+        [selectedKeys]="selectedKeys"
+        [canWrite]="canWrite"
+        (navigate)="navigateTo($event)"
+        (download)="download($event)"
+        (selectionChange)="onSelectionChange($event)"
+        (loadMore)="loadMore($event)"
+      ></app-object-browser>
+
+      <div class="bulk-bar" *ngIf="canWrite && selectedKeys.length">
+        <div>{{ selectedKeys.length }} selected</div>
+        <input type="text" name="bulkTarget" placeholder="Target prefix e.g. app/2025/02/" [(ngModel)]="bulkTargetPrefix" />
+        <label><input type="checkbox" name="bulkOverwrite" [(ngModel)]="bulkOverwrite" /> Overwrite</label>
+        <button (click)="bulkCopy()">Bulk copy</button>
+        <button (click)="bulkMove()">Bulk move</button>
+        <button class="danger" (click)="bulkDelete()">Bulk delete</button>
+      </div>
+    </div>
+    <div class="side">
+      <app-operations-panel
+        [selectedKey]="selectedKey"
+        [currentPrefix]="currentPrefix"
+        [canWrite]="canWrite"
+        (copy)="copy($event)"
+        (move)="move($event)"
+        (deleteObject)="deleteObject($event)"
+        (deleteFolder)="deleteFolder($event)"
+        (folderSize)="requestFolderSize($event)"
+      ></app-operations-panel>
+      <div class="size-card" *ngIf="folderSizeInfo">
+        <p class="label">Folder size</p>
+        <h4>{{ folderSizeInfo.prefix }}</h4>
+        <p>{{ folderSizeInfo.objectCount }} objects · {{ folderSizeInfo.totalSizeBytes | number }} bytes</p>
+      </div>
+    </div>
+  </section>
+</div>

@@ -19,7 +19,7 @@ import { ObjectItem } from '../models/object-item';
       <div class="table" [class.loading]="loading">
         <div class="row header">
           <div class="cell checkbox">
-            <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll($event)" />
+            <input type="checkbox" [checked]="allSelected" (change)="toggleSelectAll($event)" [disabled]="!canWrite" />
           </div>
           <div class="cell">Name</div>
           <div class="cell type">Type</div>
@@ -30,7 +30,7 @@ import { ObjectItem } from '../models/object-item';
 
         <div class="row" *ngFor="let folder of folders">
           <div class="cell checkbox">
-            <input type="checkbox" [checked]="isSelected(folder.fullPath)" (change)="toggle(folder.fullPath, $event)" />
+            <input type="checkbox" [checked]="isSelected(folder.fullPath)" (change)="toggle(folder.fullPath, $event)" [disabled]="!canWrite" />
           </div>
           <div class="cell"><span class="chip">Folder</span>{{ folder.name }}</div>
           <div class="cell type">Folder</div>
@@ -43,7 +43,7 @@ import { ObjectItem } from '../models/object-item';
 
         <div class="row" *ngFor="let obj of objects">
           <div class="cell checkbox">
-            <input type="checkbox" [checked]="isSelected(obj.key)" (change)="toggle(obj.key, $event)" />
+            <input type="checkbox" [checked]="isSelected(obj.key)" (change)="toggle(obj.key, $event)" [disabled]="!canWrite" />
           </div>
           <div class="cell">{{ obj.name }}</div>
           <div class="cell type">File</div>
@@ -87,6 +87,7 @@ export class ObjectBrowserComponent implements OnChanges {
   @Input() loading = false;
   @Input() nextPageToken?: string | null;
   @Input() selectedKeys: string[] = [];
+  @Input() canWrite = true;
   @Output() navigate = new EventEmitter<string>();
   @Output() download = new EventEmitter<string>();
   @Output() selectionChange = new EventEmitter<string[]>();
@@ -126,6 +127,7 @@ export class ObjectBrowserComponent implements OnChanges {
   }
 
   toggle(key: string, event: Event) {
+    if (!this.canWrite) return;
     const checked = (event.target as HTMLInputElement).checked;
     const next = new Set(this.selectedSet);
     if (checked) {
@@ -138,6 +140,7 @@ export class ObjectBrowserComponent implements OnChanges {
   }
 
   toggleSelectAll(event: Event) {
+    if (!this.canWrite) return;
     const checked = (event.target as HTMLInputElement).checked;
     const allKeys = [...this.folders.map(f => f.fullPath), ...this.objects.map(o => o.key)];
     this.selectedSet = checked ? new Set(allKeys) : new Set<string>();
@@ -152,6 +155,10 @@ export class ObjectBrowserComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedKeys']) {
       this.selectedSet = new Set(this.selectedKeys);
+    }
+    if (changes['canWrite'] && this.canWrite === false) {
+      this.selectedSet = new Set<string>();
+      this.selectionChange.emit([]);
     }
   }
 }

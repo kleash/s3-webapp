@@ -1,0 +1,97 @@
+dn: dc=example,dc=com
+objectClass: top
+objectClass: domain
+dc: example
+
+dn: ou=Users,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: Users
+
+dn: ou=Groups,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups
+
+dn: ou=ServiceAccounts,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: ServiceAccounts
+
+dn: cn=ldap-reader,ou=ServiceAccounts,dc=example,dc=com
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: ldap-reader
+userPassword: readerpass
+description: Service account for S3 webapp LDAP queries
+
+dn: cn=S3_ReadOnly,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: S3_ReadOnly
+member: uid=alice,ou=Users,dc=example,dc=com
+member: uid=both,ou=Users,dc=example,dc=com
+
+dn: cn=S3_ReadWrite,ou=Groups,dc=example,dc=com
+objectClass: groupOfNames
+cn: S3_ReadWrite
+member: uid=bob,ou=Users,dc=example,dc=com
+member: uid=both,ou=Users,dc=example,dc=com
+
+dn: uid=alice,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Alice
+sn: Example
+uid: alice
+sAMAccountName: alice
+userPassword: password1
+memberOf: cn=S3_ReadOnly,ou=Groups,dc=example,dc=com
+
+dn: uid=bob,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Bob
+sn: Example
+uid: bob
+sAMAccountName: bob
+userPassword: password1
+memberOf: cn=S3_ReadWrite,ou=Groups,dc=example,dc=com
+
+dn: uid=both,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Bridget Both
+sn: Example
+uid: both
+sAMAccountName: both
+userPassword: password1
+memberOf: cn=S3_ReadOnly,ou=Groups,dc=example,dc=com
+memberOf: cn=S3_ReadWrite,ou=Groups,dc=example,dc=com
+
+dn: uid=carol,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Carol
+sn: Override
+uid: carol
+sAMAccountName: carol
+userPassword: password1
+
+dn: uid=guest,ou=Users,dc=example,dc=com
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Guest
+sn: Example
+uid: guest
+sAMAccountName: guest
+userPassword: password1

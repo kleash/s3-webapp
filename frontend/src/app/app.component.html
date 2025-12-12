@@ -1,60 +1,20 @@
-<div class="page">
-  <header>
-    <div>
-      <h1>{{ title }}</h1>
-      <p class="subtitle">Browse any S3-compatible storage and manage objects.</p>
-    </div>
-    <div class="status" *ngIf="statusMessage">{{ statusMessage }}</div>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand" routerLink="/">S3 Browser</div>
+    <ng-container *ngIf="user$ | async as user; else loginLink">
+      <div class="user">
+        <div class="name">Logged in as {{ user.username }}</div>
+        <div class="access" [class.readonly]="user.accessLevel === 'READ_ONLY'">
+          Access: {{ user.accessLevel === 'READ_WRITE' ? 'Read & write' : 'Read-only' }}
+        </div>
+        <button (click)="logout()">Logout</button>
+      </div>
+    </ng-container>
+    <ng-template #loginLink>
+      <a class="login-link" routerLink="/login">Login</a>
+    </ng-template>
   </header>
-
-  <section class="controls">
-    <app-bucket-selector
-      [buckets]="buckets"
-      [selectedId]="selectedBucketId"
-      (bucketChange)="onBucketChange($event)"
-    ></app-bucket-selector>
-    <app-search-bar (search)="onSearch($event)" (reset)="resetSearch()"></app-search-bar>
-  </section>
-
-  <section class="content">
-    <div class="main">
-      <app-object-browser
-        [folders]="folders"
-        [objects]="objects"
-        [currentPrefix]="currentPrefix"
-        [loading]="loading"
-        [nextPageToken]="nextPageToken"
-        [selectedKeys]="selectedKeys"
-        (navigate)="navigateTo($event)"
-        (download)="download($event)"
-        (selectionChange)="onSelectionChange($event)"
-        (loadMore)="loadMore($event)"
-      ></app-object-browser>
-
-      <div class="bulk-bar" *ngIf="selectedKeys.length">
-        <div>{{ selectedKeys.length }} selected</div>
-        <input type="text" name="bulkTarget" placeholder="Target prefix e.g. app/2025/02/" [(ngModel)]="bulkTargetPrefix" />
-        <label><input type="checkbox" name="bulkOverwrite" [(ngModel)]="bulkOverwrite" /> Overwrite</label>
-        <button (click)="bulkCopy()">Bulk copy</button>
-        <button (click)="bulkMove()">Bulk move</button>
-        <button class="danger" (click)="bulkDelete()">Bulk delete</button>
-      </div>
-    </div>
-    <div class="side">
-      <app-operations-panel
-        [selectedKey]="selectedKey"
-        [currentPrefix]="currentPrefix"
-        (copy)="copy($event)"
-        (move)="move($event)"
-        (deleteObject)="deleteObject($event)"
-        (deleteFolder)="deleteFolder($event)"
-        (folderSize)="requestFolderSize($event)"
-      ></app-operations-panel>
-      <div class="size-card" *ngIf="folderSizeInfo">
-        <p class="label">Folder size</p>
-        <h4>{{ folderSizeInfo.prefix }}</h4>
-        <p>{{ folderSizeInfo.objectCount }} objects · {{ folderSizeInfo.totalSizeBytes | number }} bytes</p>
-      </div>
-    </div>
-  </section>
+  <main>
+    <router-outlet></router-outlet>
+  </main>
 </div>

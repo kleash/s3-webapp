@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 
 @Configuration
 public class WebConfig {
@@ -16,7 +17,13 @@ public class WebConfig {
                 registry.addMapping("/api/**")
                         .allowedOrigins(appProperties.cors().allowedOrigins().toArray(String[]::new))
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*");
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+
+            @Override
+            public void addViewControllers(ViewControllerRegistry registry) {
+                registry.addViewController("/login").setViewName("forward:/");
             }
         };
     }

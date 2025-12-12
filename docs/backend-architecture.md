@@ -7,7 +7,9 @@
 ## High-level architecture
 ```mermaid
 flowchart LR
-  UI[Angular Frontend] -->|HTTP/JSON| Ctrl[REST Controllers]
+  UI[Angular Frontend] -->|HTTP/JSON| Sec[Spring Security Filter Chain]
+  Sec --> Ctrl[REST Controllers]
+  Sec --> LDAP[(LDAP)]
   Ctrl --> Service[StorageService]
   Service --> Registry[BucketRegistry]
   Service --> Factory[S3ClientFactory]
@@ -55,6 +57,27 @@ flowchart LR
   - **Search**: Client-side wildcard match (case-insensitive) against keys and names within a prefix; paginates through listings.
 - **Controllers**
   - Map REST routes to `StorageService`, validate payloads, and wrap responses (including bulk/folder operations).
+
+## Security & LDAP
+- **Authentication flow**
+  - Credentials posted to `/api/auth/login`.
+  - `LdapUserService` binds with a service account (`security.ldap.bind-dn` / `bind-password`) to search for the user DN using `sAMAccountName` under `user-search-base`.
+  - After locating the DN, it binds as the end user with the submitted password to verify credentials.
+  - `memberOf` values are read to derive app roles; SSL validation can be skipped in non-prod via `security.ldap.ignore-ssl-validation`.
+- **Authorization model**
+  - Roles: `ROLE_READ_ONLY` and `ROLE_READ_WRITE`.
+  - Role sources (union, read-write wins):
+    - Group DNs listed in `security.ldap.read-write-groups` / `read-only-groups` matched against `memberOf`.
+    - Usernames in `security.ldap.read-write-users` / `read-only-users`.
+  - `security.ldap.no-role-policy` defaults to `DENY` (authentication is rejected if no role matches).
+- **Spring Security wiring**
+  - `SecurityConfig` defines the filter chain, CORS, and an `AuthenticationProvider` backed by `LdapUserService`.
+  - Session-based auth (JSESSIONID). `AuthController` exposes `/api/auth/login`, `/api/auth/me`, `/api/auth/logout`.
+  - All `/api/**` endpoints require authentication; write operations (`POST/DELETE` object + folder ops) require `ROLE_READ_WRITE`. Read-only users may list, search, download, and compute folder size.
+  - Static frontend routes are publicly served; API calls enforce authorization even if the UI is bypassed.
+- **Dev/test LDAP**
+  - `EmbeddedLdapConfig` can start an in-memory server when `security.ldap.embedded.enabled=true` (default in `application.yaml` and `application-docker.yaml`).
+  - Seed LDIF (`classpath:ldap/seed.ldif`) provides users `alice` (read-only group), `bob` (read-write), `both` (both groups), `carol` (username override to read-write), and `guest` (no role) plus the service account `ldap-reader`.
 
 ## Request flows
 

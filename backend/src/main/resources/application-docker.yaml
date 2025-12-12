@@ -25,3 +25,26 @@ s3:
       secretKey: "minioadmin"
       region: "us-east-1"
       pathStyleAccess: true
+
+security:
+  ldap:
+    url: "ldap://localhost:1389"
+    base-dn: "dc=example,dc=com"
+    bind-dn: "cn=ldap-reader,ou=ServiceAccounts,dc=example,dc=com"
+    bind-password: "readerpass"
+    user-search-base: "ou=Users,dc=example,dc=com"
+    user-search-filter: "(sAMAccountName={0})"
+    read-only-groups:
+      - "cn=S3_ReadOnly,ou=Groups,dc=example,dc=com"
+    read-write-groups:
+      - "cn=S3_ReadWrite,ou=Groups,dc=example,dc=com"
+    read-only-users: []
+    read-write-users:
+      - "carol"
+    ignore-ssl-validation: true
+    no-role-policy: DENY
+    embedded:
+      enabled: true
+      port: 1389
+      base-dn: "dc=example,dc=com"
+      seed-ldif: "classpath:ldap/seed.ldif"

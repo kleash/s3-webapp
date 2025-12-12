@@ -32,6 +32,35 @@ Buckets are defined under `s3.buckets` in `backend/src/main/resources/applicatio
 ```
 Update these values for your environment; `pathStyleAccess` should be true for MinIO.
 
+### LDAP configuration
+Authentication and authorization are driven by LDAP. Example config (kebab-case keys):
+```yaml
+security:
+  ldap:
+    url: "ldap://ldap.example.com:389"
+    base-dn: "DC=example,DC=com"
+    bind-dn: "CN=ldap-reader,OU=ServiceAccounts,DC=example,DC=com"
+    bind-password: "changeMe"
+    user-search-base: "OU=Users,DC=example,DC=com"
+    user-search-filter: "(sAMAccountName={0})"
+    read-only-groups:
+      - "CN=S3_ReadOnly,OU=Groups,DC=example,DC=com"
+    read-write-groups:
+      - "CN=S3_ReadWrite,OU=Groups,DC=example,DC=com"
+    read-only-users: []
+    read-write-users: []
+    ignore-ssl-validation: true   # dev/non-prod only
+    no-role-policy: DENY          # reject auth if no role matches
+    embedded:
+      enabled: true               # starts in-memory LDAP for dev/e2e
+      port: 1389
+      seed-ldif: "classpath:ldap/seed.ldif"
+```
+- Authentication uses a service account to find the user DN (`sAMAccountName`) and then binds as the user to validate the password.
+- Roles are derived from `memberOf` group DNs and/or explicit usernames. If both read-only and read-write match, read-write wins.
+- Default behavior if nothing matches is to deny access.
+- `ignore-ssl-validation` exists for convenience; production deployments should use proper TLS trust.
+
 ## Prerequisites
 - Java 17+
 - Maven 3.9+
@@ -48,6 +77,10 @@ This will:
 3) Start MinIO + backend via docker compose
 4) Seed buckets with sample data
 5) Print the app URL (`http://localhost:9080`)
+
+Login with the dev LDAP users:
+- `alice` / `password1` (Read-only)
+- `bob` / `password1` (Read & write)
 
 Stop everything with:
 ```
@@ -123,7 +156,7 @@ These cover deep folders, mixed file types, wildcard search (`trade_2025_*.csv`)
 ## Testing
 - Backend unit/integration: `mvn -f backend/pom.xml test`
 - Frontend unit tests: `npm test` (Angular/Karma; requires Chrome/Chromium) – build sanity check via `npm run build`
-- End-to-end: `./scripts/e2e.sh` (builds images, seeds, runs Playwright against live stack)
+- End-to-end: `./scripts/e2e.sh` (builds images, seeds MinIO + embedded LDAP, runs Playwright against live stack)
 
 ## Search & size notes
 - Search is a simple wildcard match over listed keys (case-insensitive). For large buckets it performs paged listings client-side; consider tightening prefixes for performance.
